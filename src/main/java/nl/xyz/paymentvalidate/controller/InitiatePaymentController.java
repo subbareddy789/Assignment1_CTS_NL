@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,9 +31,11 @@ public class InitiatePaymentController {
 
 
     private final PaymentValidationService paymentValidationService;
+    private X509Certificate applicationCertificate;
 
-    public InitiatePaymentController(PaymentValidationService paymentValidationService) {
+    public InitiatePaymentController(PaymentValidationService paymentValidationService,X509Certificate applicationCertificate) {
         this.paymentValidationService = paymentValidationService;
+        this.applicationCertificate = applicationCertificate;
     }
 
     @PostMapping(path = "/v1.0.0/initiate-payment",
@@ -53,11 +57,12 @@ public class InitiatePaymentController {
             throw new InvalidRequestException("Invalid Request");
         }
 
-        //TODO commenting as its always returning false
+        //FIXME  commenting as its always returning false
         /*if(!paymentValidationService.validateSignature(headers.get(Constants.SIGNATURE_CERTIFICATE),headers.get(Constants.SIGNATURE))){
             log.error("Invalid Signature");
             throw new InvalidSignatureException("Invalid signature");
         }*/
+
         var response = new PaymentAcceptedResponse()
                 .status(TransactionStatus.ACCEPTED)
                 .paymentId(UUID.randomUUID());
@@ -68,7 +73,7 @@ public class InitiatePaymentController {
         responseHeaders.set(Constants.SIGNATURE_CERTIFICATE,
                 headers.get(Constants.SIGNATURE_CERTIFICATE));
         responseHeaders.set(Constants.SIGNATURE,
-                headers.get(Constants.SIGNATURE));
+                new String(Base64.getEncoder().encode(applicationCertificate.getSignature())));
 
         return new ResponseEntity<>(response,responseHeaders, HttpStatus.CREATED);
     }

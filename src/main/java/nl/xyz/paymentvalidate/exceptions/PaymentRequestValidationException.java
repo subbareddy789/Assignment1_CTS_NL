@@ -9,11 +9,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
 
 
 @RestControllerAdvice
@@ -22,6 +23,7 @@ public class PaymentRequestValidationException extends ResponseEntityExceptionHa
 
 
     private HttpServletRequest requestHeaders;
+    private X509Certificate applicationCertificate;
 
     @ExceptionHandler(UnknownCertificateException.class)
     public  ResponseEntity<PaymentRejectedResponse> handleInvalidCertificateException(UnknownCertificateException ex){
@@ -66,7 +68,7 @@ public class PaymentRequestValidationException extends ResponseEntityExceptionHa
         headers.set(Constants.SIGNATURE_CERTIFICATE,
                 requestHeaders.getHeader(Constants.SIGNATURE_CERTIFICATE));
         headers.set(Constants.SIGNATURE,
-                requestHeaders.getHeader(Constants.SIGNATURE));
+                new String(Base64.getEncoder().encode(applicationCertificate.getSignature())));
         return headers;
     }
 }
