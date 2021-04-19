@@ -46,11 +46,17 @@ public class PaymentRequestValidationException extends ResponseEntityExceptionHa
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public  ResponseEntity<PaymentRejectedResponse> handleLimitExceedException(Exception ex){
         var response = new PaymentRejectedResponse().reasonCode(ErrorReasonCode.GENERAL_ERROR)
                 .status(TransactionStatus.REJECTED).reason(ex.getMessage());
         return new ResponseEntity<>(response,getResponseHeaders(),HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(InvalidSignatureException.class)
+    public  ResponseEntity<PaymentRejectedResponse> handleInvalidSignatureException(InvalidSignatureException ex){
+        var response = new PaymentRejectedResponse().reasonCode(ErrorReasonCode.INVALID_SIGNATURE)
+                .status(TransactionStatus.REJECTED).reason(ex.getMessage());
+        return new ResponseEntity<>(response,getResponseHeaders(),HttpStatus.BAD_REQUEST);
     }
 
     public HttpHeaders getResponseHeaders(){

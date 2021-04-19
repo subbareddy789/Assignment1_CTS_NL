@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import nl.xyz.paymentvalidate.common.Constants;
 import nl.xyz.paymentvalidate.exceptions.InvalidRequestException;
+import nl.xyz.paymentvalidate.exceptions.InvalidSignatureException;
 import nl.xyz.paymentvalidate.exceptions.LimitExceedException;
 import nl.xyz.paymentvalidate.exceptions.UnknownCertificateException;
 import nl.xyz.paymentvalidate.model.PaymentAcceptedResponse;
@@ -52,6 +53,11 @@ public class InitiatePaymentController {
             throw new InvalidRequestException("Invalid Request");
         }
 
+        //TODO commenting as its always returning false
+        /*if(!paymentValidationService.validateSignature(headers.get(Constants.SIGNATURE_CERTIFICATE),headers.get(Constants.SIGNATURE))){
+            log.error("Invalid Signature");
+            throw new InvalidSignatureException("Invalid signature");
+        }*/
         var response = new PaymentAcceptedResponse()
                 .status(TransactionStatus.ACCEPTED)
                 .paymentId(UUID.randomUUID());

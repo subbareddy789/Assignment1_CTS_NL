@@ -1,10 +1,16 @@
 package nl.xyz.paymentvalidate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.xyz.paymentvalidate.common.Constants;
 import nl.xyz.paymentvalidate.model.PaymentInitiationRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -22,9 +28,7 @@ public class PaymentValidationService{
      */
     public boolean validateCertificate(String x509CertText) {
         try {
-            CertificateFactory cf = CertificateFactory.getInstance("X509");
-            ByteArrayInputStream bytes = new ByteArrayInputStream(Base64.getDecoder().decode(x509CertText.getBytes()));
-            X509Certificate certificate = (X509Certificate) cf.generateCertificate(bytes);
+            X509Certificate certificate = getCertificateFromText(x509CertText);
             return certificate.getSubjectDN().getName().contains("CN=Sandbox-TPP");
         } catch (CertificateException e) {
             log.error("Certificate validation failed... {}",e.getMessage());
@@ -37,9 +41,16 @@ public class PaymentValidationService{
      * @param clientSign
      * @return
      */
-    public boolean validateSignature(String clientSign) {
-        // TODO implement the logic here
-        return true;
+    public boolean validateSignature(String certificateText, String clientSign) {
+        try {
+            X509Certificate certificate = getCertificateFromText(certificateText);
+            Signature signature = Signature.getInstance(Constants.SHA256_RSA);
+            signature.initVerify(certificate);
+            return signature.verify(Base64.getDecoder().decode(clientSign.getBytes()));
+        } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
+            log.error("Signature validation failed");
+        }
+        return false;
     }
 
     /**
@@ -67,5 +78,18 @@ public class PaymentValidationService{
                 && paymentInitReq.getCreditorIBAN().matches("[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}")
                 && paymentInitReq.getAmount().matches("-?[0-9]+(\\.[0-9]{1,3})?")
                 && paymentInitReq.getCurrency().matches("[A-Z]{3}");
+    }
+
+
+    /**
+     * Method to get the certificate from client header variable
+     * @param certificateText
+     * @return
+     * @throws CertificateException
+     */
+    private X509Certificate getCertificateFromText(String certificateText) throws CertificateException {
+        CertificateFactory cf = CertificateFactory.getInstance(Constants.X509);
+        ByteArrayInputStream bytes = new ByteArrayInputStream(Base64.getDecoder().decode(certificateText.getBytes()));
+        return (X509Certificate) cf.generateCertificate(bytes);
     }
 }
