@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Map;
@@ -47,7 +48,8 @@ public class InitiatePaymentController {
         if(!paymentValidationService.validateCertificate(headers.get(Constants.SIGNATURE_CERTIFICATE))){
             throw new UnknownCertificateException("Unknown certificate received");
         }
-        if(Double.valueOf(paymentInitReq.getAmount()) > 0
+        BigDecimal amount = new BigDecimal(paymentInitReq.getAmount());
+        if(amount.compareTo(BigDecimal.ZERO) > 0
                 && paymentValidationService.checkAmountLimitExceeded(paymentInitReq.getDebtorIBAN())){
             log.error("Limit exceeded exception");
             throw new LimitExceedException("Amount Limit Exceeded");
@@ -57,11 +59,10 @@ public class InitiatePaymentController {
             throw new InvalidRequestException("Invalid Request");
         }
 
-        //FIXME  commenting as its always returning false
-        /*if(!paymentValidationService.validateSignature(headers.get(Constants.SIGNATURE_CERTIFICATE),headers.get(Constants.SIGNATURE))){
+        if(!paymentValidationService.validateSignature(headers.get(Constants.SIGNATURE_CERTIFICATE),headers.get(Constants.SIGNATURE))){
             log.error("Invalid Signature");
             throw new InvalidSignatureException("Invalid signature");
-        }*/
+        }
 
         var response = new PaymentAcceptedResponse()
                 .status(TransactionStatus.ACCEPTED)

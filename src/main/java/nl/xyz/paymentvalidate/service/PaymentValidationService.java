@@ -6,7 +6,6 @@ import nl.xyz.paymentvalidate.model.PaymentInitiationRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
@@ -49,6 +48,7 @@ public class PaymentValidationService{
             return signature.verify(Base64.getDecoder().decode(clientSign.getBytes()));
         } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
             log.error("Signature validation failed");
+            ex.printStackTrace();
         }
         return false;
     }
@@ -89,7 +89,7 @@ public class PaymentValidationService{
      */
     private X509Certificate getCertificateFromText(String certificateText) throws CertificateException {
         CertificateFactory cf = CertificateFactory.getInstance(Constants.X509);
-        ByteArrayInputStream bytes = new ByteArrayInputStream(Base64.getDecoder().decode(certificateText.getBytes()));
-        return (X509Certificate) cf.generateCertificate(bytes);
+        return (X509Certificate) cf.generateCertificate(
+                new ByteArrayInputStream(Base64.getDecoder().decode(certificateText.getBytes())));
     }
 }
